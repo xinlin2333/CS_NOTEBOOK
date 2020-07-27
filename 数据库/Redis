@@ -713,3 +713,109 @@ partial resynchronization ：include ：主服务的replication offset（复制�
 
 高可用：HA high availability，减少系统不能提供服务的时间
 
+**经典架构环节分析**
+
+- **客户端-》反向代理层**，通过反向代理层的冗余来实现的。比如两台nginx，一台对线上提供服务，另一台冗余以保证高可用，常见的实践是keepalived
+
+- **反向代理层-》web应用**站点层的冗余来实现的，假设反向代理层是nginx，nginx.conf能够配置多个web后端，并且nginx能够探测到多个后端的存活性。
+
+  自动故障转移，当web-server挂掉了，nginx能够探测到并自动进行故障转移，将流量自动迁移到其他server
+
+- **服务层-》缓存层** 缓存数据的冗余 redis支持主从同步，sentine哨斌机制
+
+- **服务层到数据层** 数据库用主从同步、读写分离
+
+- 读库采用冗余的方式来实现高可用，写库采用keepalived存货探测binlog进行同步
+
+
+
+**数据迁移**
+
+1、rdb：SAVE OK 
+
+​     BGSAVE：创建dump.rbd
+
+​     查找dump.rdb位置：CONFIG GET dir
+
+ 2、AOF 配置文件打开appendonly yes
+
+3、挂redis从库复制数据方法  redis提供了replication功能可以自动实现同步的过程
+
+配置方法 通过配置文件 从数据库的配置文件加入 slaveof master-ip master-port 主数据库无需配置通过命令行参数启动redis-server，使用-slaveof master port redis-server -port当前数据库停止接收其他数据库的同步，转成redis数据库，程序链接地址都改新的redis库Ip地址和端口
+
+## 15.3 Sentinel（解决宕机）
+
+sentinel：主从之间的切换（自动高可用）cluster用于分散hash负载均衡
+
+案例：服务灾备故障转移 sentinel配置
+
+- redis主从复制将主节点数据同步给从节点，从节点：从节点作为主节点的备份可以随时顶上去；扩展主节点的读能力，分担主节点的读压力
+
+  有问题！主节点宕机，从节点成为master后，同时需要修改应用的主节点地址，还需要命令所有从节点去复制新的主节点
+
+- redis主节点挂掉后
+
+  `slaveof no one` 
+
+  `slaveof 新host 新节点`
+
+- 开启sentinel配置 
+
+  ```
+  sentinel monitor mymaster 127.0.0.1 6379 1 mymaster这个主服务器失效至少需要1个sentinel同意
+  sentinel down-after-milliseconds mymaster 10000 指定sentinel认为服务器已经断线所需要的时间
+  sentinel failover-timeout mymaster 60000 当前sentinel 认为failover失败
+  sentinel parallel-sync mymaster 1 指定了在执行故障转移时，最多可以有多少个从服务器同时对新的主服务器进行同步
+  ```
+
+  
+
+### 15.3.1 sentinel 任务
+
+- monitor ：检查主服务器和从服务器是否运作正常
+- notification：当被监控的某个redis服务器出现问题时，sentinel可以通过API向管理员或者其他应用程序发送通知
+- Automatic failover：当一个主服务器不能正常工作时，sentinel 会开始一次自动故障迁移，将失效主服务器的一个从服务器升级为新的主服务器，并让失效主服务器的其他从服务器改为复制新的主服务器；
+
+
+
+### 15.3.2 冷备 & 热备
+
+- 冷备
+
+  数据库已经正常关闭的情况下
+
+  优点：快速备份的方法，只需要拷贝文件；低度维护、高度安全
+
+  缺点：单独使用只能提供到“某一时间上”的恢复；实施备份全过程中，数据库必须要做备份不能做其他工作
+
+- 热备
+
+  archivelog mode方式 备份数据库的方法
+
+  优点：备份时间短；备份数据库仍可用
+
+  缺点：若备份不成功，所得结果不可用于时间点的恢复
+
+
+
+### 15.3.3 sentinel故障转移
+
+- 主观下线
+  - 概念：主观下线（Subjectively down ，SDOWN）指的是单个sentinel 实例对服务器作出的下线判断
+  - 特点：
+    - 如果一个服务器没有在master-down-after-milliseconds选项做指定的时间内对向他发送PING命令的sentinel返回一个有效回复（valid reply），那么sentinel将这个服务器标记为主观下线
+    - 服务器对PING命令的有效回复：+PONG；-LOADING；-MASTERDOWN
+- 客观下线
+  - 概念
+    - 多个sentinel实例对同一个服务器作出SDOWN判断，并且通过SENTINEL is master-down-by-addr命令互相交流后，得出服务器下线判断
+  - 特点
+    - 从主观下线切换到客观下线状态并咩有使用严格的法定人数算法（strong quorum alogorithm），而是使用了流言协议；sentinel在给定的范围内，从其他的sentinel接收到了足够数量的主服务器下线报告，那么sentinel会将主服务器的状态从主观下线状态改变为客观下线
+  - 注意点：
+    - 客观下线只适用于主服务器，对于其他类型的redis实例，sentinel在将她们judge为下线前不需要协商。
+
+## 15.4 redis内置高可用集群
+
+
+
+15.4.1 一致性hash算法
+
