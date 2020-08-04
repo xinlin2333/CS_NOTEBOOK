@@ -123,15 +123,43 @@ public String(String original){
 
 **1、可变性**
 
-- string不可变，任何对string的改变都会引发新的string对象生成
+- string不可变，因为由final关键字修饰```private final byte[] value``，所以在类初始化过程中，该值已经加载入常量池，对象会有一个指针指向其常量池所对应的地址。任何对string的改变都会引发新的string对象生成
 - stringbuffer和stringbuilder可变，改变不会产生新的对象
 
 **2、线程安全**
 
 - string不可变，线程安全的
 - stringBuilder不是线程安全，但线程效率高
-- stringbuffer线程安全，内部使用synchronized进行同步
+- stringbuffer线程安全，内部的方法前都加上了synchronized关键字进行同步操作
 
+这里类似于hashmap和hashtable：
+hashTable是线程安全的，但是hashMap是线程不安全的，因为hashTable在很多方法都是synchronized方法
+
+```java
+ @Override
+    public synchronized int length() {
+        return count;
+    }
+
+    @Override
+    public synchronized int capacity() {
+        return value.length;
+    }
+
+
+    @Override
+    public synchronized void ensureCapacity(int minimumCapacity) {
+        super.ensureCapacity(minimumCapacity);
+    }
+
+    /**
+     * @since      1.5
+     */
+    @Override
+    public synchronized void trimToSize() {
+        super.trimToSize();
+    }
+```
 在字符串操作频繁的情况下，string的效率远低于其他两个
 
 ### StringBuffer & StringBuilder
