@@ -100,7 +100,17 @@ public static <T> List<T> asList(T... a)
 
 ### 1、概览
 
-因为 ArrayList 是基于数组实现的，所以支持快速随机访问。**RandomAccess** 接口标识着该类支持快速随机访问。
+因为 ArrayList 是基于动态数组实现的，与Java中的数组相比，它的容量能够动态增长的。在添加大量元素前，应用程序可以使用ensureCapacity操作来增加实例的容量，减少递增式再分配数量
+
+ArrayList实现了**RandomAccess接口**，支持快速随机访问，通过元素的序号快速获取元素对象；
+
+ArrayList实现了cloneable接口，覆盖clone函数，能被克隆
+
+ArrayList实现了serializable接口，支持序列化
+
+ArrayList不是线程安全的。在单线程中使用ArrayList，多线程中使用vector或者CopyOnWirteArrayList
+
+
 
 ```java
 public class ArrayList<E> extends AbstractList<E>
