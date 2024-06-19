@@ -5,6 +5,12 @@
  */
 
 // @lc code=start
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.tree.TreeNode;
+
 /**
  * Definition for a binary tree node.
  * public class TreeNode {
@@ -22,7 +28,30 @@
  */
 class Solution {
     public List<List<Integer>> pathSum(TreeNode root, int targetSum) {
-        
+        List<List<Integer>> res = new ArrayList<>();
+        if(root == null) {
+            return res;
+        }
+        List<Integer> path = new ArrayList<>();
+        traversal(root, targetSum, res, path);
+        return res;
+    }
+    public void traversal(TreeNode root, List<List<Integer>> res, List<Integer> path, int targetSum) {
+        path.add(root.val);
+        if(root.left == null && root.right==null) {
+            if(targetSum - root.val == 0) {
+                res.add(new ArrayList<>(path));
+            }
+            return;
+        }
+        if(root.left!=null) {
+            traversal(root.left, res, path, targetSum-root.val);
+            path.remove(path.size()-1);
+        }
+        if(root.right != null) {
+            traversal(root.right, res, path, targetSum-root.val);
+            path.remove(path.size()-1);
+        }
     }
 }
 // @lc code=end
