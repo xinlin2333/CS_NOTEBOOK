@@ -17,8 +17,9 @@
  */
 class Solution {
     public int[] nodesBetweenCriticalPoints(ListNode head) {
+        int[] res = new int
         if(head == null) {
-            
+            return 
         }
         
     }
