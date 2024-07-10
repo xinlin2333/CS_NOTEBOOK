@@ -17,26 +17,27 @@
  */
 class Solution {
     public ListNode rotateRight(ListNode head, int k) {
-        if(head == null || k ==0 ) {
+        if ( head == null || k == 0){
             return head;
-        } 
-        int count = 1;
+        }
+        int count = 0;
         ListNode cur = head;
-        while(cur.next!=null) {
-            count++;
-            cur = cur.next;
-        } 
-        if(k % count == 0) {
-            return head;
-        } 
-        k = k %count;
-        cur.next = head;
-        for (int i=0;i<(count - k);i++) {
+        while(cur != null) {
+            count ++;
             cur = cur.next;
         }
-        head = cur.next;   
-        cur.next= null;
-        return head;
+        if (k % count == 0) {
+            return head;
+        }
+        k = k % count;
+        cur = head;
+        for (int i=0; i<(count -k);i++) {
+            cur = cur.next;
+        }
+        head = cur.next;
+        cur.next = null;
+        return head ; 
+
     }
 }
 // @lc code=end
